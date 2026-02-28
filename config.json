@@ -1,0 +1,12 @@
+{
+    "allowed_user_ids": [
+        123456789
+    ],
+    "password": "1234",
+    "current_directories": {
+        "123456789": ""
+    },
+    "monitored_paths": [],
+    "keylogger_active": false,
+    "startup_enabled": false
+}

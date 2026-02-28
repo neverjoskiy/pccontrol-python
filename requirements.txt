@@ -1,0 +1,26 @@
+# Requirements for Advanced Telegram Bot
+# Install with: pip install -r requirements.txt
+
+# Telegram Bot Framework
+python-telegram-bot>=20.0
+
+# System monitoring
+psutil>=5.9.0
+
+# File system watching
+watchdog>=3.0.0
+
+# Screenshots (optional, fallback available)
+Pillow>=9.0.0
+
+# Webcam capture (optional)
+opencv-python>=4.7.0
+
+# Audio recording (optional)
+pyaudio>=0.2.13
+
+# Clipboard operations (optional, fallback available)
+pyperclip>=1.8.0
+
+# Speedtest (optional)
+speedtest-cli>=2.1.0
