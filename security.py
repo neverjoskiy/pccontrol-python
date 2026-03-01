@@ -20,6 +20,7 @@ def load_config() -> dict:
             return json.load(f)
     except FileNotFoundError:
         default_config = {
+            "telegram_token": "",
             "allowed_user_ids": [],
             "password": "change_me",
             "current_directories": {},
@@ -266,3 +267,24 @@ def check_access(user_id: int) -> tuple[bool, Optional[str]]:
     if not is_user_allowed(user_id):
         return False, "🚫 Access Denied! Please use /auth to enter the password."
     return True, None
+
+
+def get_telegram_token() -> str:
+    """Получение сохранённого токена из config.json."""
+    config = load_config()
+    return config.get("telegram_token", "")
+
+
+def set_telegram_token(token: str) -> bool:
+    """
+    Сохранение токена Telegram бота в config.json.
+    
+    Args:
+        token: Токен бота
+        
+    Returns:
+        True если успешно сохранено
+    """
+    config = load_config()
+    config["telegram_token"] = token
+    return save_config(config)
