@@ -24,3 +24,8 @@ pyperclip>=1.8.0
 
 # Speedtest (optional)
 speedtest-cli>=2.1.0
+
+# Web Framework
+Flask>=2.3.0
+WTForms>=3.0.0
+Flask-WTF>=1.1.0

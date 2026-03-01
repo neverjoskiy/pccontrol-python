@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Bot - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        * {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #f5f7fa;
+        }
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 1rem 0;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 20px;
+            color: #667eea !important;
+        }
+        .sidebar {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+        }
+        .stat-box {
+            padding: 25px;
+            border-radius: 10px;
+            color: white;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .stat-box h3 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .stat-box p {
+            margin: 0;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .stat-cpu {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .stat-ram {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-disk {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+        .upload-zone {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+        .upload-zone:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+        .upload-zone.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+        .file-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+        }
+        .file-item:hover {
+            background: #f8f9fa;
+        }
+        .btn-icon {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .logout-btn {
+            color: #f5576c;
+            transition: all 0.3s;
+        }
+        .logout-btn:hover {
+            color: #d63447;
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+        }
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="container-fluid">
+            <span class="navbar-brand"><i class="bi bi-cpu"></i> Advanced Bot Control</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Выход</a>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- Статистика -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stat-box stat-cpu">
+                    <h3 id="cpu-percent">{{ system_info.cpu_percent }}%</h3>
+                    <p><i class="bi bi-cpu"></i> CPU</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-box stat-ram">
+                    <h3 id="ram-percent">{{ system_info.ram_percent }}%</h3>
+                    <p><i class="bi bi-memory"></i> RAM ({{ system_info.ram_used_gb }}/{{ system_info.ram_total_gb }} GB)</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-box stat-disk">
+                    <h3 id="disk-percent">{{ system_info.disk_percent }}%</h3>
+                    <p><i class="bi bi-hdd"></i> Диск ({{ system_info.disk_used_gb }}/{{ system_info.disk_total_gb }} GB)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Загрузка файлов -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-cloud-upload"></i> Загрузить файлы
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-zone" id="uploadZone">
+                            <i class="bi bi-file-earmark-arrow-up" style="font-size: 40px; color: #667eea; margin-bottom: 10px; display: block;"></i>
+                            <p style="margin: 0; color: #666;">Перетащите файлы сюда или <strong>нажмите для выбора</strong></p>
+                            <small style="color: #999; display: block; margin-top: 5px;" id="max-size">Максимум 500 MB</small>
+                        </div>
+                        <input type="file" id="fileInput" style="display: none;" multiple>
+                        
+                        <div class="mt-3">
+                            <div id="uploadProgress" style="display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" 
+                                         role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <small class="text-muted" id="uploadStatus">Загрузка...</small>
+                            </div>
+                        </div>
+
+                        <div id="uploadStatus" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Список файлов -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-folder"></i> Загруженные файлы
+                    </div>
+                    <div class="card-body">
+                        <div class="file-list" id="filesList">
+                            {% if files %}
+                                {% for file in files %}
+                                <div class="file-item" data-filename="{{ file.name }}">
+                                    <div>
+                                        <strong>{{ file.name }}</strong><br>
+                                        <small class="text-muted">{{ file.size_mb }} MB</small>
+                                    </div>
+                                    <div>
+                                        <a href="{{ url_for('download_file', filename=file.name) }}" 
+                                           class="btn btn-sm btn-primary btn-icon">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-danger btn-icon" onclick="deleteFile('{{ file.name }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center py-4">Файлов нет. Загрузите файл выше.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Подробная информация -->
+        <div class="row mt-4">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle"></i> Информация о системе
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6 class="text-muted">CPU Cores</h6>
+                                <p class="fs-5 fw-bold">{{ system_info.cpu_count }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">RAM Total</h6>
+                                <p class="fs-5 fw-bold">{{ system_info.ram_total_gb }} GB</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Диск Total</h6>
+                                <p class="fs-5 fw-bold">{{ system_info.disk_total_gb }} GB</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Папка загрузок</h6>
+                                <p class="fs-5 fw-bold"><small>/uploads</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const filesList = document.getElementById('filesList');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+
+        // Drag & Drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+        function handleFiles(files) {
+            for (let file of files) {
+                uploadFileToServer(file);
+            }
+        }
+
+        function uploadFileToServer(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                    uploadProgress.style.display = 'block';
+                }
+            });
+
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    addFileToList(response.filename, response.size_mb);
+                    showAlert('Успешно', response.message, 'success');
+                } else {
+                    const response = JSON.parse(xhr.responseText);
+                    showAlert('Ошибка', response.error || 'Ошибка загрузки', 'danger');
+                }
+                progressBar.style.width = '0%';
+                setTimeout(() => { uploadProgress.style.display = 'none'; }, 1000);
+            });
+
+            xhr.addEventListener('error', () => {
+                showAlert('Ошибка', 'Ошибка сети при загрузке', 'danger');
+                uploadProgress.style.display = 'none';
+            });
+
+            xhr.open('POST', '/upload');
+            xhr.send(formData);
+        }
+
+        function addFileToList(filename, sizeMb) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.dataset.filename = filename;
+            fileItem.innerHTML = `
+                <div>
+                    <strong>${filename}</strong><br>
+                    <small class="text-muted">${sizeMb} MB</small>
+                </div>
+                <div>
+                    <a href="/files/${filename}" class="btn btn-sm btn-primary btn-icon">
+                        <i class="bi bi-download"></i>
+                    </a>
+                    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteFile('${filename}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+
+            if (filesList.querySelector('.text-muted')) {
+                filesList.innerHTML = '';
+            }
+            filesList.insertBefore(fileItem, filesList.firstChild);
+        }
+
+        function deleteFile(filename) {
+            if (!confirm(`Вы уверены, что хотите удалить ${filename}?`)) return;
+
+            fetch(`/files/${filename}`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector(`[data-filename="${filename}"]`).remove();
+                        showAlert('Успешно', data.message, 'success');
+                        if (filesList.children.length === 0) {
+                            filesList.innerHTML = '<p class="text-muted text-center py-4">Файлов нет. Загрузите файл выше.</p>';
+                        }
+                    }
+                });
+        }
+
+        function showAlert(title, message, type) {
+            const statusDiv = document.getElementById('uploadStatus');
+            const alertClass = `alert-${type}`;
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <strong>${title}!</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            statusDiv.innerHTML = alertHtml;
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // Обновление статистики каждые 5 секунд
+        function updateStats() {
+            fetch('/api/system-info')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('cpu-percent').textContent = Math.round(data.cpu_percent) + '%';
+                    document.getElementById('ram-percent').textContent = Math.round(data.ram_percent) + '%';
+                    document.getElementById('disk-percent').textContent = Math.round(data.disk_percent) + '%';
+                })
+                .catch(e => console.error('Stats update error:', e));
+        }
+
+        setInterval(updateStats, 5000);
+    </script>
+</body>
+</html>

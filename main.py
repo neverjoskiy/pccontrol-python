@@ -1,15 +1,17 @@
 """
-Точка входа для Telegram-бота.
-Запуск бота с настройкой логирования и обработкой ошибок.
+Точка входа для Telegram-бота и веб-интерфейса.
+Запуск бота и веб-сервера параллельно.
 """
 
 import logging
 import os
 import sys
+import threading
 from pathlib import Path
 
 from bot import create_application
 from security import load_config
+from web_app import start_web_server
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -58,9 +60,9 @@ def get_token() -> str:
 
 
 def main():
-    """Основная функция запуска бота."""
+    """Основная функция запуска бота и веб-сервера."""
     logger.info("=" * 50)
-    logger.info("Starting Advanced Telegram Bot...")
+    logger.info("Starting Advanced Telegram Bot + Web Interface...")
     logger.info("=" * 50)
 
     token = get_token()
@@ -93,6 +95,11 @@ def main():
         logger.error(f"❌ Error creating application: {e}")
         print(f"❌ Error creating application: {e}")
         sys.exit(1)
+
+    # Запуск веб-сервера в отдельном потоке
+    web_thread = threading.Thread(target=start_web_server, daemon=False)
+    web_thread.start()
+    logger.info("✓ Web server thread started")
 
     try:
         application.run_polling(
